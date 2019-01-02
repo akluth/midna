@@ -17,17 +17,29 @@ extern crate clap;
 extern crate colored;
 extern crate dirs;
 extern crate reqwest;
+extern crate serde_json;
 
 mod aur;
 
-use clap::{App, SubCommand};
+use clap::{App, Arg, SubCommand};
 use colored::*;
+use serde_json::Value;
 
 fn main() {
     let matches = App::new("midna")
         .version("0.1.0")
         .about("Alternative AUR package helper/manager")
         .subcommand(SubCommand::with_name("update").about("Update local AUR package list"))
+        .subcommand(
+            SubCommand::with_name("search")
+                .about("Search for package in AUR package list")
+                .arg(
+                    Arg::with_name("package_name")
+                        .value_name("PACKAGE_NAME")
+                        .takes_value(true)
+                        .required(true),
+                ),
+        )
         .get_matches();
 
     let aur = aur::Aur {};
@@ -40,10 +52,33 @@ fn main() {
             Ok(_list) => println!(" {}\t{}", "Updated".bold().green(), "AUR package list."),
             Err(e) => println!("{}", e),
         };
+    } else if let Some(cmd) = matches.subcommand_matches("search") {
+        let results: Value = aur.search_package(cmd.value_of("package_name").unwrap());
+
+        for i in 0..results["results"].as_array().unwrap().len() {
+            println!(
+                " {}/{} {}",
+                "aur".bold().cyan(),
+                results["results"][i]["Name"]
+                    .as_str()
+                    .unwrap()
+                    .bold()
+                    .white(),
+                results["results"][i]["Version"]
+                    .as_str()
+                    .unwrap()
+                    .bold()
+                    .green()
+            );
+
+            if let Some(desc) = results["results"][i]["Description"].as_str() {
+                println!("    {}", desc);
+            }
+        }
     } else {
         println!(
             "{}",
-            "No command given. Try 'midna update' or 'midna install'."
+            "No command given. Try 'midna update' or 'midna search $PACKAGE_NAME'."
                 .bold()
                 .red()
         );

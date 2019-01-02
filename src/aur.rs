@@ -14,11 +14,15 @@
  * limitations under the License.
  */
 use reqwest::Error;
+use serde_json::Value;
 use std::fs;
 use std::fs::File;
+use std::io::prelude::*;
 use std::io::Write;
 
+const LOCAL_PACKAGES_LIST: &'static str = "midna/packages_list";
 const PACKAGE_LIST: &'static str = "https://aur.archlinux.org/packages.gz";
+const AUR_RPC_SEARCH: &'static str = "https://aur.archlinux.org/rpc/?v=5&type=search&arg=";
 
 pub struct Aur {}
 
@@ -37,13 +41,41 @@ impl Aur {
         let body = reqwest::get(self::PACKAGE_LIST)?.text()?;
 
         if let Some(data_local_dir) = dirs::data_local_dir() {
-            let config_path = data_local_dir.as_path().join("midna/package_list");
+            let config_path = data_local_dir.as_path().join(self::LOCAL_PACKAGES_LIST);
 
             let mut package_list = File::create(config_path.as_path()).unwrap();
-
             package_list.write_all(body.as_bytes()).unwrap();
         }
 
         Ok(body)
+    }
+
+    pub fn search_package(&self, package_name: &str) -> Value {
+        let body = reqwest::get(&format!("{}{}", self::AUR_RPC_SEARCH, package_name))
+            .unwrap()
+            .text()
+            .unwrap();
+        let result: Value = serde_json::from_str(&body).unwrap();
+
+        return result;
+    }
+
+    fn search_package_local(package_name: &str) {
+        let mut file = File::open(
+            dirs::data_local_dir()
+                .unwrap()
+                .as_path()
+                .join(self::LOCAL_PACKAGES_LIST),
+        )
+        .unwrap();
+
+        let mut file_content = String::new();
+        file.read_to_string(&mut file_content).unwrap();
+
+        if let Some(_package) = file_content.lines().find(|&p| p == package_name) {
+            println!("jefunden {} ", package_name);
+        } else {
+            println!("hamwa nit jefunde {} ", package_name);
+        }
     }
 }
