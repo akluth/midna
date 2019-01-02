@@ -1,4 +1,4 @@
-/**
+/*!
  * Copyright 2019 Alexander Kluth <deralex@cpan.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,30 +15,37 @@
  */
 extern crate clap;
 extern crate colored;
+extern crate dirs;
 extern crate reqwest;
 
-use clap::{App, Arg, SubCommand};
+mod aur;
+
+use clap::{App, SubCommand};
 use colored::*;
-use reqwest::get;
 
 fn main() {
     let matches = App::new("midna")
         .version("0.1.0")
         .about("Alternative AUR package helper/manager")
-        .arg(
-            Arg::with_name("sync")
-                .short("S")
-                .long("Sync")
-                .value_name("PACKAGE_NAME")
-                .help("Install package from AUR or official repositories")
-                .takes_value(true)
-                .required(true),
-        )
+        .subcommand(SubCommand::with_name("update").about("Update local AUR package list"))
         .get_matches();
 
-    println!(
-        "{} {}",
-        " Searching ".bold().green(),
-        matches.value_of("sync").unwrap()
-    );
+    let aur = aur::Aur {};
+
+    aur.check_for_data_dir();
+
+    if let Some(_matches) = matches.subcommand_matches("update") {
+        println!(" {}\t{}", "Updating".bold().yellow(), "AUR package list...");
+        match aur.update_package_list() {
+            Ok(_list) => println!(" {}\t{}", "Updated".bold().green(), "AUR package list."),
+            Err(e) => println!("{}", e),
+        };
+    } else {
+        println!(
+            "{}",
+            "No command given. Try 'midna update' or 'midna install'."
+                .bold()
+                .red()
+        );
+    }
 }
