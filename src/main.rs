@@ -16,6 +16,7 @@
 extern crate clap;
 extern crate colored;
 extern crate dirs;
+extern crate git2;
 extern crate reqwest;
 extern crate serde_json;
 
@@ -33,6 +34,16 @@ fn main() {
         .subcommand(
             SubCommand::with_name("search")
                 .about("Search for package in AUR package list")
+                .arg(
+                    Arg::with_name("package_name")
+                        .value_name("PACKAGE_NAME")
+                        .takes_value(true)
+                        .required(true),
+                ),
+        )
+        .subcommand(
+            SubCommand::with_name("install")
+                .about("Install package from AUR")
                 .arg(
                     Arg::with_name("package_name")
                         .value_name("PACKAGE_NAME")
@@ -75,6 +86,12 @@ fn main() {
                 println!("    {}", desc);
             }
         }
+    } else if let Some(cmd) = matches.subcommand_matches("install") {
+        let package_name = cmd.value_of("package_name").unwrap();
+
+        println!(" {}\t{}", "Installing ".bold().green(), package_name.bold().white());
+
+        aur.install_package(package_name);
     } else {
         println!(
             "{}",
