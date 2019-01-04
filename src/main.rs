@@ -89,7 +89,11 @@ fn main() {
     } else if let Some(cmd) = matches.subcommand_matches("install") {
         let package_name = cmd.value_of("package_name").unwrap();
 
-        println!(" {}\t{}", "Installing ".bold().green(), package_name.bold().white());
+        println!(
+            " {}\t{}",
+            "Installing ".bold().green(),
+            package_name.bold().white()
+        );
 
         aur.install_package(package_name);
     } else {

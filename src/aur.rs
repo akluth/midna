@@ -22,7 +22,7 @@ use std::fs::File;
 use std::io::prelude::*;
 use std::io::Write;
 use std::path::PathBuf;
-use std::process::Command;
+use std::process::{Command, Stdio};
 
 const DATA_DIRECTORY: &'static str = "midna";
 const LOCAL_PACKAGES_LIST: &'static str = "midna/packages_list";
@@ -68,7 +68,10 @@ impl Aur {
 
     pub fn clone_package(&self, package_name: &str) {
         if let Some(data_local_dir) = dirs::data_local_dir() {
-            let repo_dir = data_local_dir.as_path().join(self::DATA_DIRECTORY).join(package_name);
+            let repo_dir = data_local_dir
+                .as_path()
+                .join(self::DATA_DIRECTORY)
+                .join(package_name);
 
             if repo_dir.exists() {
                 return;
@@ -77,7 +80,11 @@ impl Aur {
 
         let _repo = match Repository::clone(
             &format!("{}{}.git", self::AUR_CLONE, package_name),
-            &format!("{}/{}", self.get_data_dir().unwrap().to_str().unwrap(), package_name)
+            &format!(
+                "{}/{}",
+                self.get_data_dir().unwrap().to_str().unwrap(),
+                package_name
+            ),
         ) {
             Ok(repo) => repo,
             Err(e) => panic!("Failed to clone {}: {}", package_name.bold().red(), e),
@@ -85,12 +92,24 @@ impl Aur {
     }
 
     pub fn install_package(&self, package_name: &str) {
-        println!(" {}\t{}", "Cloning".bold().green(), package_name.bold().white());
+        println!(
+            " {}\t{}",
+            "Cloning".bold().green(),
+            package_name.bold().white()
+        );
         self.clone_package(package_name);
 
         let mut makepkg_cmd = Command::new("makepkg");
-        makepkg_cmd.current_dir(format!("{}/{}", self.get_data_dir().unwrap().to_str().unwrap(), package_name));
-        makepkg_cmd.status().expect("Failed to execute 'makepkg'");
+        makepkg_cmd.current_dir(format!(
+            "{}/{}",
+            self.get_data_dir().unwrap().to_str().unwrap(),
+            package_name
+        ));
+
+        makepkg_cmd
+            .stdout(Stdio::piped())
+            .output()
+            .expect("Failed to execute 'makepkg'");
     }
 
     fn search_package_local(package_name: &str) {
