@@ -49,6 +49,12 @@ fn main() {
                         .value_name("PACKAGE_NAME")
                         .takes_value(true)
                         .required(true),
+                )
+                .arg(
+                    Arg::with_name("verbose")
+                        .short("v")
+                        .long("verbose")
+                        .help("Display output from makepkg etc. during install process"),
                 ),
         )
         .get_matches();
@@ -90,12 +96,24 @@ fn main() {
         let package_name = cmd.value_of("package_name").unwrap();
 
         println!(
-            " {}\t{}",
-            "Installing ".bold().green(),
-            package_name.bold().white()
+            " {} {} {}",
+            "::".bold().blue(),
+            "Installing".bold().green(),
+            package_name.bold().purple()
         );
 
-        aur.install_package(package_name);
+        if cmd.is_present("verbose") {
+            aur.install_package(package_name, true);
+        } else {
+            aur.install_package(package_name, false);
+        }
+
+        println!(
+            " {} {} {}",
+            "::".bold().blue(),
+            "Successfully installed".bold().green(),
+            package_name.bold().purple()
+        );
     } else {
         println!(
             "{}",

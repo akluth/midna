@@ -22,7 +22,7 @@ use std::fs::File;
 use std::io::prelude::*;
 use std::io::Write;
 use std::path::PathBuf;
-use std::process::{Command, Stdio};
+use std::process::Command;
 
 const DATA_DIRECTORY: &'static str = "midna";
 const LOCAL_PACKAGES_LIST: &'static str = "midna/packages_list";
@@ -91,25 +91,34 @@ impl Aur {
         };
     }
 
-    pub fn install_package(&self, package_name: &str) {
-        println!(
-            " {}\t{}",
-            "Cloning".bold().green(),
-            package_name.bold().white()
-        );
+    pub fn install_package(&self, package_name: &str, verbose: bool) {
+        println!(" {} {}", "::".bold().blue(), "Cloning from AUR...".bold().cyan());
         self.clone_package(package_name);
 
-        let mut makepkg_cmd = Command::new("makepkg");
-        makepkg_cmd.current_dir(format!(
-            "{}/{}",
-            self.get_data_dir().unwrap().to_str().unwrap(),
-            package_name
-        ));
+        println!(
+            " {} {} {}... {}",
+            "::".bold().blue(),
+            "Running".bold().cyan(),
+            "makepkg -si".bold().white(),
+            "You will be prompted for your password in order to install the package."
+                .bold()
+                .yellow()
+        );
 
+        let mut makepkg_cmd = Command::new("makepkg");
         makepkg_cmd
-            .stdout(Stdio::piped())
-            .output()
-            .expect("Failed to execute 'makepkg'");
+            .current_dir(format!(
+                "{}/{}",
+                self.get_data_dir().unwrap().to_str().unwrap(),
+                package_name
+            ))
+            .arg("-si");
+
+        if verbose {
+            makepkg_cmd.status().expect("Failed to execute 'makepkg'");
+        } else {
+            makepkg_cmd.output().expect("Failed to execute 'makepkg'");
+        }
     }
 
     fn search_package_local(package_name: &str) {
