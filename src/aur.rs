@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+use super::log;
 use colored::*;
 use git2::Repository;
 use reqwest::Error;
@@ -22,7 +23,7 @@ use std::fs::File;
 use std::io::prelude::*;
 use std::io::Write;
 use std::path::PathBuf;
-use std::process::Command;
+use std::process::{Command, ExitStatus};
 
 const DATA_DIRECTORY: &'static str = "midna";
 const LOCAL_PACKAGES_LIST: &'static str = "midna/packages_list";
@@ -74,6 +75,7 @@ impl Aur {
                 .join(package_name);
 
             if repo_dir.exists() {
+                log::warning("Repository already exists, will not clone it.");
                 return;
             }
         }
@@ -86,24 +88,17 @@ impl Aur {
                 package_name
             ),
         ) {
-            Ok(repo) => repo,
-            Err(e) => panic!("Failed to clone {}: {}", package_name.bold().red(), e),
+            Ok(_repo) => log::info("Successfully cloned", package_name),
+            Err(e) => log::error("Failed to clone", package_name, e.message()),
         };
     }
 
     pub fn install_package(&self, package_name: &str, verbose: bool) {
-        println!(" {} {}", "::".bold().blue(), "Cloning from AUR...".bold().cyan());
+        log::info("Cloning repository from AUR", "");
         self.clone_package(package_name);
 
-        println!(
-            " {} {} {}... {}",
-            "::".bold().blue(),
-            "Running".bold().cyan(),
-            "makepkg -si".bold().white(),
-            "You will be prompted for your password in order to install the package."
-                .bold()
-                .yellow()
-        );
+        log::info("Running makepkg --syncdeps in repository directory", "");
+        log::hint("You will be prompted for your password in order to install the package!");
 
         let mut makepkg_cmd = Command::new("makepkg");
         makepkg_cmd
@@ -112,33 +107,43 @@ impl Aur {
                 self.get_data_dir().unwrap().to_str().unwrap(),
                 package_name
             ))
-            .arg("-si");
+            .arg("--syncdeps");
 
         if verbose {
-            makepkg_cmd.status().expect("Failed to execute 'makepkg'");
+            let status = makepkg_cmd.status().expect("Failed to execute 'makepkg'");
+
+            match status.code() {
+                Some(_code) => println!("hure"),
+                None => println!("fotze"),
+            }
         } else {
-            makepkg_cmd.output().expect("Failed to execute 'makepkg'");
+            let output = makepkg_cmd.output().expect("Failed to execute 'makepkg'");
+
+            match output.status.code() {
+                Some(_code) => println!("oifjweoifj"),
+                None => println!("o;wrifwo;eifj"),
+            }
         }
     }
 
-    fn search_package_local(package_name: &str) {
-        let mut file = File::open(
-            dirs::data_local_dir()
-                .unwrap()
-                .as_path()
-                .join(self::LOCAL_PACKAGES_LIST),
-        )
-        .unwrap();
+    // fn search_package_local(package_name: &str) {
+    //     let mut file = File::open(
+    //         dirs::data_local_dir()
+    //             .unwrap()
+    //             .as_path()
+    //             .join(self::LOCAL_PACKAGES_LIST),
+    //     )
+    //     .unwrap();
 
-        let mut file_content = String::new();
-        file.read_to_string(&mut file_content).unwrap();
+    //     let mut file_content = String::new();
+    //     file.read_to_string(&mut file_content).unwrap();
 
-        if let Some(_package) = file_content.lines().find(|&p| p == package_name) {
-            println!("jefunden {} ", package_name);
-        } else {
-            println!("hamwa nit jefunde {} ", package_name);
-        }
-    }
+    //     if let Some(_package) = file_content.lines().find(|&p| p == package_name) {
+    //         println!("jefunden {} ", package_name);
+    //     } else {
+    //         println!("hamwa nit jefunde {} ", package_name);
+    //     }
+    // }
 
     fn get_data_dir(&self) -> Result<PathBuf, &'static str> {
         match dirs::data_local_dir() {

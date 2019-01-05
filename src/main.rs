@@ -13,20 +13,35 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+mod aur;
+mod log;
+
+extern crate chrono;
 extern crate clap;
 extern crate colored;
 extern crate dirs;
 extern crate git2;
 extern crate reqwest;
 extern crate serde_json;
+#[macro_use]
+extern crate log as base_log;
+extern crate simplelog;
 
-mod aur;
-
+use ::log::*;
 use clap::{App, Arg, SubCommand};
 use colored::*;
 use serde_json::Value;
+use simplelog::*;
+use std::fs::File;
 
 fn main() {
+    CombinedLogger::init(vec![WriteLogger::new(
+        LevelFilter::Info,
+        Config::default(),
+        File::create("midna.log").unwrap(),
+    )])
+    .unwrap();
+
     let matches = App::new("midna")
         .version("0.1.0")
         .about("Alternative AUR package helper/manager")
@@ -95,12 +110,7 @@ fn main() {
     } else if let Some(cmd) = matches.subcommand_matches("install") {
         let package_name = cmd.value_of("package_name").unwrap();
 
-        println!(
-            " {} {} {}",
-            "::".bold().blue(),
-            "Installing".bold().green(),
-            package_name.bold().purple()
-        );
+        log::info("Installing", package_name);
 
         if cmd.is_present("verbose") {
             aur.install_package(package_name, true);
@@ -108,12 +118,7 @@ fn main() {
             aur.install_package(package_name, false);
         }
 
-        println!(
-            " {} {} {}",
-            "::".bold().blue(),
-            "Successfully installed".bold().green(),
-            package_name.bold().purple()
-        );
+        log::info("Successfully installed", package_name);
     } else {
         println!(
             "{}",
