@@ -25,6 +25,7 @@ extern crate reqwest;
 extern crate serde_json;
 #[macro_use]
 extern crate log as base_log;
+extern crate glob;
 extern crate simplelog;
 
 use ::log::*;

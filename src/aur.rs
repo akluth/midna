@@ -14,16 +14,15 @@
  * limitations under the License.
  */
 use super::log;
-use colored::*;
 use git2::Repository;
+use glob::glob;
 use reqwest::Error;
 use serde_json::Value;
 use std::fs;
 use std::fs::File;
-use std::io::prelude::*;
 use std::io::Write;
 use std::path::PathBuf;
-use std::process::{Command, ExitStatus};
+use std::process::Command;
 
 const DATA_DIRECTORY: &'static str = "midna";
 const LOCAL_PACKAGES_LIST: &'static str = "midna/packages_list";
@@ -98,7 +97,6 @@ impl Aur {
         self.clone_package(package_name);
 
         log::info("Running makepkg --syncdeps in repository directory", "");
-        log::hint("You will be prompted for your password in order to install the package!");
 
         let mut makepkg_cmd = Command::new("makepkg");
         makepkg_cmd
@@ -113,15 +111,57 @@ impl Aur {
             let status = makepkg_cmd.status().expect("Failed to execute 'makepkg'");
 
             match status.code() {
-                Some(_code) => println!("hure"),
-                None => println!("fotze"),
+                Some(_code) => {}
+                None => {}
             }
         } else {
             let output = makepkg_cmd.output().expect("Failed to execute 'makepkg'");
 
             match output.status.code() {
-                Some(_code) => println!("oifjweoifj"),
-                None => println!("o;wrifwo;eifj"),
+                Some(_code) => {}
+                None => {}
+            }
+        }
+
+        log::info("Installing package with pacman -U", "");
+        log::hint("You will be prompted for your password in order to install the package!");
+
+        let mut package: String = String::from("");
+
+        for entry in glob(&format!(
+            "{}/{}/{}-*.pkg.tar.xz",
+            self.get_data_dir().unwrap().to_str().unwrap(),
+            package_name,
+            package_name
+        ))
+        .unwrap()
+        .filter_map(Result::ok)
+        {
+            package = entry.display().to_string();
+        }
+
+        let mut pacman_cmd = Command::new("sudo");
+        pacman_cmd
+            .current_dir(format!(
+                "{}/{}",
+                self.get_data_dir().unwrap().to_str().unwrap(),
+                package_name
+            ))
+            .args(vec!["pacman", "-U", &package, "--noconfirm"]);
+
+        if verbose {
+            let status = pacman_cmd.status().expect("Failed to execute 'pacman'");
+
+            match status.code() {
+                Some(_code) => {}
+                None => {}
+            }
+        } else {
+            let output = pacman_cmd.output().expect("Failed to execute 'pacman'");
+
+            match output.status.code() {
+                Some(_code) => {}
+                None => {}
             }
         }
     }
