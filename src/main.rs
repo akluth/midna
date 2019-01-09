@@ -90,7 +90,7 @@ fn main() {
 
         for i in 0..results["results"].as_array().unwrap().len() {
             println!(
-                " {}/{} {}",
+                "{}/{} {}",
                 "aur".bold().cyan(),
                 results["results"][i]["Name"]
                     .as_str()
@@ -113,13 +113,21 @@ fn main() {
 
         log::info("Installing", package_name);
 
-        if cmd.is_present("verbose") {
-            aur.install_package(package_name, true);
-        } else {
-            aur.install_package(package_name, false);
-        }
+        // if cmd.is_present("verbose") {
+        //     aur.install_package(package_name, true);
+        // } else {
+        //     aur.install_package(package_name, false);
+        // }
 
-        log::info("Successfully installed", package_name);
+        let verbose = match cmd.value_of("verbose") {
+            Some(_verbose) => true,
+            None => false
+        };
+
+        match aur.install_package(package_name, verbose) {
+            Ok(_good) => log::info("Successfully installed", package_name),
+            Err(err) => log::error("Error installing", package_name, &err)
+        }
     } else {
         println!(
             "{}",

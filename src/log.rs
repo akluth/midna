@@ -18,7 +18,7 @@ use colored::*;
 pub fn info(predicate: &str, object: &str) {
     info!("{} {}", predicate, object);
     println!(
-        " {} {} {}",
+        "{} {} {}",
         "::".bold().cyan(),
         predicate.bold(),
         object.bold().cyan()
@@ -30,7 +30,7 @@ pub fn warning(predicate: &str) {
 }
 
 pub fn hint(msg: &str) {
-    println!(" {}", msg.bold().yellow());
+    println!("{}", msg.bold().yellow());
 }
 
 pub fn error(predicate: &str, object: &str, msg: &str) {

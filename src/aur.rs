@@ -92,12 +92,25 @@ impl Aur {
         };
     }
 
-    pub fn install_package(&self, package_name: &str, verbose: bool) {
+    pub fn install_package(&self, package_name: &str, verbose: bool) -> Result<(), String> {
         log::info("Cloning repository from AUR", "");
         self.clone_package(package_name);
 
         log::info("Running makepkg --syncdeps in repository directory", "");
 
+        let package_file: String = match self.makepkg(package_name, verbose) {
+            Ok(package_file) => package_file,
+            Err(e) => return Err(e),
+        };
+
+        log::info("Installing package with pacman -U", "");
+        log::hint("You will be prompted for your password in order to install the package!");
+        self.pacman_install(package_file, verbose);
+
+        Ok(())
+    }
+
+    pub fn makepkg(&self, package_name: &str, verbose: bool) -> Result<String, String> {
         let mut makepkg_cmd = Command::new("makepkg");
         makepkg_cmd
             .current_dir(format!(
@@ -110,21 +123,16 @@ impl Aur {
         if verbose {
             let status = makepkg_cmd.status().expect("Failed to execute 'makepkg'");
 
-            match status.code() {
-                Some(_code) => {}
-                None => {}
+            if !status.success() {
+                return Err(String::from("nwedwedwedeee"));
             }
         } else {
             let output = makepkg_cmd.output().expect("Failed to execute 'makepkg'");
 
-            match output.status.code() {
-                Some(_code) => {}
-                None => {}
+            if !output.status.success() {
+                return Err(String::from("disch nit so jut"));
             }
         }
-
-        log::info("Installing package with pacman -U", "");
-        log::hint("You will be prompted for your password in order to install the package!");
 
         let mut package: String = String::from("");
 
@@ -140,14 +148,18 @@ impl Aur {
             package = entry.display().to_string();
         }
 
+        Ok(package.clone())
+    }
+
+    pub fn pacman_install(&self, package_file: String, verbose: bool) {
         let mut pacman_cmd = Command::new("sudo");
         pacman_cmd
             .current_dir(format!(
                 "{}/{}",
                 self.get_data_dir().unwrap().to_str().unwrap(),
-                package_name
+                &package_file
             ))
-            .args(vec!["pacman", "-U", &package, "--noconfirm"]);
+            .args(vec!["pacman", "-U", &package_file, "--noconfirm"]);
 
         if verbose {
             let status = pacman_cmd.status().expect("Failed to execute 'pacman'");
