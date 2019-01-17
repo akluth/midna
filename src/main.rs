@@ -113,16 +113,7 @@ fn main() {
 
         log::info("Installing", package_name);
 
-        // if cmd.is_present("verbose") {
-        //     aur.install_package(package_name, true);
-        // } else {
-        //     aur.install_package(package_name, false);
-        // }
-
-        let verbose = match cmd.value_of("verbose") {
-            Some(_verbose) => true,
-            None => false
-        };
+        let verbose = cmd.is_present("verbose");
 
         match aur.install_package(package_name, verbose) {
             Ok(_good) => log::info("Successfully installed", package_name),
