@@ -153,13 +153,7 @@ impl Aur {
 
     pub fn pacman_install(&self, package_file: String, verbose: bool) {
         let mut pacman_cmd = Command::new("sudo");
-        pacman_cmd
-            .current_dir(format!(
-                "{}/{}",
-                self.get_data_dir().unwrap().to_str().unwrap(),
-                &package_file
-            ))
-            .args(vec!["pacman", "-U", &package_file, "--noconfirm"]);
+        pacman_cmd.args(vec!["pacman", "-U", &package_file, "--noconfirm"]);
 
         if verbose {
             let status = pacman_cmd.status().expect("Failed to execute 'pacman'");
