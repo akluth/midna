@@ -39,7 +39,7 @@ fn main() {
     CombinedLogger::init(vec![WriteLogger::new(
         LevelFilter::Info,
         Config::default(),
-        File::create("midna.log").unwrap(),
+        File::create("/tmp/midna.log").unwrap(),
     )])
     .unwrap();
 
